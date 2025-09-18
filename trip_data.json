@@ -1,0 +1,89 @@
+[
+  {
+    "destination": "CM to Bangkok",
+    "start_date": "2025-09-17",
+    "end_date": "2025-09-19",
+    "expenses": [
+      {
+        "date": "2025-09-18",
+        "category": "Transport",
+        "amount": 5600.0,
+        "description": ""
+      },
+      {
+        "date": "2025-09-18",
+        "category": "Accommodation",
+        "amount": 1500.0,
+        "description": ""
+      },
+      {
+        "date": "2025-09-18",
+        "category": "Food",
+        "amount": 260.0,
+        "description": ""
+      },
+      {
+        "date": "2025-09-18",
+        "category": "Transport",
+        "amount": 140.0,
+        "description": "by bolt"
+      },
+      {
+        "date": "2025-09-18",
+        "category": "Shopping",
+        "amount": 420.0,
+        "description": "by Mom"
+      },
+      {
+        "date": "2025-09-18",
+        "category": "Shopping",
+        "amount": 340.0,
+        "description": "by Sumon"
+      },
+      {
+        "date": "2025-09-18",
+        "category": "Food",
+        "amount": 260.0,
+        "description": ""
+      }
+    ],
+    "budget": 12000.0,
+    "bank": 60000.0,
+    "bank_amount": 12000.0
+  },
+  {
+    "destination": "CM to Hanoi, Hanoi to Sapa, Sapa to Hanoi, Hanoi to Danan, Danan to CM",
+    "start_date": "2025-10-03",
+    "end_date": "2025-10-12",
+    "expenses": [
+      {
+        "date": "2025-09-18",
+        "category": "Transport",
+        "amount": 25050.0,
+        "description": "From CM to Hanoi"
+      },
+      {
+        "date": "2025-09-18",
+        "category": "Transport",
+        "amount": 25000.0,
+        "description": "From Danan to Hanoi to Chaing Mai "
+      }
+    ],
+    "budget": 150000.0
+  },
+  {
+    "destination": "Sep_Expense by Our family",
+    "start_date": "2025-09-16",
+    "end_date": "2025-09-30",
+    "expenses": [
+      {
+        "date": "2025-09-16",
+        "category": "Other",
+        "amount": 300.0,
+        "description": "by U Zaw's translation"
+      }
+    ],
+    "budget": 12000.0,
+    "bank_amount": 12000.0
+  }
+]
