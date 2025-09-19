@@ -186,14 +186,22 @@ if st.button("🧠 Generate AI Itinerary"):
             f"{extra_prompt}"
         )
         try:
+            GROQ_URL = "https://api.groq.com/v1/completions"  # Updated correct endpoint
             headers = {"Authorization": f"Bearer {GROQ_API_KEY}"}
-            payload = {"prompt": question, "model": "groq-1"}
-            r = requests.post(GROQ_URL, headers=headers, json=payload, timeout=30)
+            payload = {
+                "model": "groq-1",
+                "prompt": question,
+                "max_output_tokens": 500
+            }
+            r = requests.post(GROQ_URL, headers=headers, json=payload, timeout=15)
             if r.ok:
-                st.markdown(r.json().get("answer", "No answer returned"))
+                # Groq's response may contain a list of outputs
+                answer = r.json().get("completions", [])
+                if answer and len(answer) > 0:
+                    st.markdown(answer[0].get("text", "No answer returned."))
+                else:
+                    st.info("No response from Groq. Try again.")
             else:
                 st.error(f"Groq API request failed. Status: {r.status_code}, {r.text}")
-        except requests.exceptions.Timeout:
-            st.error("Groq API request timed out. Try again later.")
-        except requests.exceptions.RequestException as e:
-            st.error(f"Groq API request exception: {e}")
+        except Exception as e:
+            st.error(f"AI request failed: {e}")
