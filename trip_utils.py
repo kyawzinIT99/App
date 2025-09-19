@@ -6,7 +6,7 @@ import io
 # -------------------------
 # Streamlit Custom Styles
 # -------------------------
-def apply_fancy_theme(bg_color="#d1e3d9", text_color="#3F3C3C", accent_color="#ABE971"):
+def apply_fancy_theme(bg_color="#AAC4B5", text_color="#302B2B", accent_color="#B8C0B2"):
     """
     Apply a custom background and accent colors to the Streamlit app.
     """
