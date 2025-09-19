@@ -1,8 +1,8 @@
 # -----------------------------
-# trip_test1.py
+# trip_test1.py (Upgraded + Excel export)
 # -----------------------------
 import streamlit as st
-st.set_page_config(page_title="Trip Planner", layout="wide")  # Must be first Streamlit command
+st.set_page_config(page_title="Trip Planner", layout="wide")  # Must be first
 
 import json
 import os
@@ -11,15 +11,17 @@ import pandas as pd
 import plotly.express as px
 import requests
 from trip_utils import apply_fancy_theme, export_to_excel, export_to_csv
+import io
 
 # -----------------------------
 # Check Groq API Key (Secrets)
 # -----------------------------
-GROQ_API_KEY = st.secrets.get("GROQ", {}).get("API_KEY")
+GROQ_SECRETS = st.secrets.get("GROQ", {})
+GROQ_API_KEY = GROQ_SECRETS.get("API_KEY")
 GROQ_URL = "https://api.groq.com/llm"
 
 st.write("🔑 Secrets check")
-st.write(st.secrets.get("GROQ", {}))
+st.write(GROQ_SECRETS)
 
 # -----------------------------
 # Apply custom theme
@@ -34,15 +36,19 @@ DATA_FILE = "trip_data.json"
 def load_data():
     if not os.path.exists(DATA_FILE):
         return []
-    with open(DATA_FILE, "r", encoding="utf-8") as f:
-        try:
+    try:
+        with open(DATA_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
-        except:
-            return []
+    except Exception as e:
+        st.error(f"Failed to load data: {e}")
+        return []
 
 def save_data(data):
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+    try:
+        with open(DATA_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        st.error(f"Failed to save data: {e}")
 
 def local_delete_expense(trip_index, expense_index):
     trips = load_data()
@@ -153,6 +159,17 @@ if trips:
         )
         st.plotly_chart(fig_cat, use_container_width=True)
 
+        # --- Export to Excel ---
+        if st.button("💾 Export Expenses to Excel"):
+            excel_buffer = io.BytesIO()
+            df_exp.to_excel(excel_buffer, index=False, engine='openpyxl')
+            st.download_button(
+                label="Download Excel",
+                data=excel_buffer.getvalue(),
+                file_name=f"{selected_trip['destination']}_expenses.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+
 # --- AI Itinerary using Groq ---
 extra_prompt = st.text_area(
     "Add extra instructions (optional) for AI",
@@ -171,10 +188,12 @@ if st.button("🧠 Generate AI Itinerary"):
         try:
             headers = {"Authorization": f"Bearer {GROQ_API_KEY}"}
             payload = {"prompt": question, "model": "groq-1"}
-            r = requests.post(GROQ_URL, headers=headers, json=payload, timeout=10)
+            r = requests.post(GROQ_URL, headers=headers, json=payload, timeout=30)
             if r.ok:
-                st.markdown(r.json().get("answer", "No answer"))
+                st.markdown(r.json().get("answer", "No answer returned"))
             else:
-                st.error("Groq API request failed. Check your key and network.")
-        except Exception as e:
-            st.error(f"AI request failed: {e}")
+                st.error(f"Groq API request failed. Status: {r.status_code}, {r.text}")
+        except requests.exceptions.Timeout:
+            st.error("Groq API request timed out. Try again later.")
+        except requests.exceptions.RequestException as e:
+            st.error(f"Groq API request exception: {e}")
