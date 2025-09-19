@@ -1,8 +1,8 @@
 # -----------------------------
-# trip_test1.py (Upgraded + Excel export)
+# trip_test1.py
 # -----------------------------
 import streamlit as st
-st.set_page_config(page_title="Trip Planner", layout="wide")  # Must be first
+st.set_page_config(page_title="Trip Planner", layout="wide")  # Must be first Streamlit command
 
 import json
 import os
@@ -16,12 +16,10 @@ import io
 # -----------------------------
 # Check Groq API Key (Secrets)
 # -----------------------------
-GROQ_SECRETS = st.secrets.get("GROQ", {})
-GROQ_API_KEY = GROQ_SECRETS.get("API_KEY")
-GROQ_URL = "https://api.groq.com/llm"
+GROQ_API_KEY = st.secrets.get("GROQ", {}).get("API_KEY")
 
 st.write("🔑 Secrets check")
-st.write(GROQ_SECRETS)
+st.write(st.secrets.get("GROQ", {}))
 
 # -----------------------------
 # Apply custom theme
@@ -36,19 +34,15 @@ DATA_FILE = "trip_data.json"
 def load_data():
     if not os.path.exists(DATA_FILE):
         return []
-    try:
-        with open(DATA_FILE, "r", encoding="utf-8") as f:
+    with open(DATA_FILE, "r", encoding="utf-8") as f:
+        try:
             return json.load(f)
-    except Exception as e:
-        st.error(f"Failed to load data: {e}")
-        return []
+        except:
+            return []
 
 def save_data(data):
-    try:
-        with open(DATA_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-    except Exception as e:
-        st.error(f"Failed to save data: {e}")
+    with open(DATA_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
 
 def local_delete_expense(trip_index, expense_index):
     trips = load_data()
@@ -165,7 +159,7 @@ if trips:
             df_exp.to_excel(excel_buffer, index=False, engine='openpyxl')
             st.download_button(
                 label="Download Excel",
-                data=excel_buffer.getvalue(),
+                data=excel_buffer,
                 file_name=f"{selected_trip['destination']}_expenses.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
@@ -180,28 +174,33 @@ if st.button("🧠 Generate AI Itinerary"):
     if not GROQ_API_KEY:
         st.warning("Groq API key not found! AI itinerary cannot be generated. Please add it in Streamlit Secrets.")
     else:
-        question = (
-            f"Plan a trip to {selected_trip['destination']} from {selected_trip['start_date']} "
-            f"to {selected_trip['end_date']}, considering these expenses: {selected_trip.get('expenses',[])}. "
-            f"{extra_prompt}"
-        )
+        # Correct Groq API endpoint
+        GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+
+        messages = [
+            {"role": "system", "content": "You are a helpful travel assistant."},
+            {"role": "user", "content": f"Plan a trip to {selected_trip['destination']} from {selected_trip['start_date']} to {selected_trip['end_date']}."},
+        ]
+        if extra_prompt:
+            messages.append({"role": "user", "content": extra_prompt})
+
+        payload = {
+            "model": "llama3-70b-8192",  # adjust to your available model
+            "messages": messages,
+            "max_tokens": 500,
+        }
+
         try:
-            GROQ_URL = "https://api.groq.com/v1/completions"  # Updated correct endpoint
-            headers = {"Authorization": f"Bearer {GROQ_API_KEY}"}
-            payload = {
-                "model": "groq-1",
-                "prompt": question,
-                "max_output_tokens": 500
-            }
-            r = requests.post(GROQ_URL, headers=headers, json=payload, timeout=15)
-            if r.ok:
-                # Groq's response may contain a list of outputs
-                answer = r.json().get("completions", [])
-                if answer and len(answer) > 0:
-                    st.markdown(answer[0].get("text", "No answer returned."))
-                else:
-                    st.info("No response from Groq. Try again.")
+            response = requests.post(
+                GROQ_URL,
+                headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
+                json=payload,
+                timeout=10
+            )
+            if response.status_code == 200:
+                answer = response.json().get("choices", [{}])[0].get("message", {}).get("content", "No answer returned.")
+                st.markdown(answer)
             else:
-                st.error(f"Groq API request failed. Status: {r.status_code}, {r.text}")
+                st.error(f"Groq API request failed. Status: {response.status_code}, {response.text}")
         except Exception as e:
             st.error(f"AI request failed: {e}")
