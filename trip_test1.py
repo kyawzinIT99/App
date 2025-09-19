@@ -18,7 +18,7 @@ apply_fancy_theme()
 # Constants
 # -------------------------
 DATA_FILE = "trip_data.json"
-GROQ_API_KEY = st.secrets["GROQ"]["API_KEY"]
+GROQ_API_KEY = st.secrets.get("GROQ", {}).get("API_KEY")
 GROQ_URL = "https://api.groq.com/llm"  # replace with your actual endpoint
 
 # -------------------------
@@ -182,13 +182,12 @@ if trips:
                 file_name=f"{selected_trip['destination']}_expenses.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
+
 # --- AI Itinerary using Groq ---
 extra_prompt = st.text_area(
     "Add extra instructions (optional) for AI",
     placeholder="E.g., vegetarian restaurants, budget under 1500 THB, adventure activities..."
 )
-
-GROQ_API_KEY = st.secrets.get("GROQ", {}).get("API_KEY")
 
 if st.button("🧠 Generate AI Itinerary"):
     if not GROQ_API_KEY:
@@ -199,14 +198,15 @@ if st.button("🧠 Generate AI Itinerary"):
             f"to {selected_trip['end_date']}, considering these expenses: {selected_trip.get('expenses',[])}. "
             f"{extra_prompt}"
         )
-        try:
-            import requests
-            headers = {"Authorization": f"Bearer {GROQ_API_KEY}"}
-            payload = {"prompt": question, "model": "groq-1"}  # adjust model if needed
-            r = requests.post("https://api.groq.com/llm", headers=headers, json=payload, timeout=10)
-            if r.ok:
-                st.markdown(r.json().get("answer", "No answer"))
-            else:
-                st.error("Groq API request failed. Check your key and network.")
-        except Exception as e:
-            st.error(f"AI request failed: {e}")
+        with st.spinner("Generating AI itinerary..."):
+            try:
+                headers = {"Authorization": f"Bearer {GROQ_API_KEY}"}
+                payload = {"prompt": question, "model": "groq-1"}  # adjust model if needed
+                r = requests.post(GROQ_URL, headers=headers, json=payload, timeout=10)
+                if r.ok:
+                    answer = r.json().get("answer", "No answer from Groq API.")
+                    st.markdown(f"### 📝 AI Itinerary\n{answer}")
+                else:
+                    st.error("Groq API request failed. Check your key and network.")
+            except Exception as e:
+                st.error(f"AI request failed: {e}")
