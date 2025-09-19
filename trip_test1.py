@@ -1,4 +1,5 @@
 import streamlit as st
+st.write("GROQ API Key:", st.secrets.get("GROQ", {}).get("API_KEY"))
 st.set_page_config(page_title="Trip Planner", layout="wide")
 
 import json
