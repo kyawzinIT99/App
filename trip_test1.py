@@ -11,12 +11,12 @@ import pandas as pd
 import plotly.express as px
 import requests
 from trip_utils import apply_fancy_theme, export_to_excel, export_to_csv
-import io
 
 # -----------------------------
 # Check Groq API Key (Secrets)
 # -----------------------------
 GROQ_API_KEY = st.secrets.get("GROQ", {}).get("API_KEY")
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 st.write("🔑 Secrets check")
 st.write(st.secrets.get("GROQ", {}))
@@ -155,14 +155,16 @@ if trips:
 
         # --- Export to Excel ---
         if st.button("💾 Export Expenses to Excel"):
-            excel_buffer = io.BytesIO()
-            df_exp.to_excel(excel_buffer, index=False, engine='openpyxl')
-            st.download_button(
-                label="Download Excel",
-                data=excel_buffer,
-                file_name=f"{selected_trip['destination']}_expenses.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+            if not df_exp.empty:
+                import io
+                excel_buffer = io.BytesIO()
+                df_exp.to_excel(excel_buffer, index=False, engine='openpyxl')
+                st.download_button(
+                    label="Download Excel",
+                    data=excel_buffer,
+                    file_name=f"{selected_trip['destination']}_expenses.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
 
 # --- AI Itinerary using Groq ---
 extra_prompt = st.text_area(
@@ -174,18 +176,16 @@ if st.button("🧠 Generate AI Itinerary"):
     if not GROQ_API_KEY:
         st.warning("Groq API key not found! AI itinerary cannot be generated. Please add it in Streamlit Secrets.")
     else:
-        # Correct Groq API endpoint
-        GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-
+        # Build messages
         messages = [
             {"role": "system", "content": "You are a helpful travel assistant."},
-            {"role": "user", "content": f"Plan a trip to {selected_trip['destination']} from {selected_trip['start_date']} to {selected_trip['end_date']}."},
+            {"role": "user", "content": f"Plan a trip to {selected_trip['destination']} from {selected_trip['start_date']} to {selected_trip['end_date']} considering these expenses: {selected_trip.get('expenses', [])}."}
         ]
         if extra_prompt:
             messages.append({"role": "user", "content": extra_prompt})
 
         payload = {
-            "model": "llama3-70b-8192",  # adjust to your available model
+            "model": "llama-3.3-70b-versatile",  # Updated model
             "messages": messages,
             "max_tokens": 500,
         }
@@ -204,3 +204,4 @@ if st.button("🧠 Generate AI Itinerary"):
                 st.error(f"Groq API request failed. Status: {response.status_code}, {response.text}")
         except Exception as e:
             st.error(f"AI request failed: {e}")
+   
