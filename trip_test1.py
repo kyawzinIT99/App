@@ -10,7 +10,7 @@ from datetime import date
 import pandas as pd
 import plotly.express as px
 import requests
-#from trip_utils import apply_fancy_theme, export_to_excel, export_to_csv
+from trip_utils import apply_fancy_theme, export_to_excel, export_to_csv
 
 # -----------------------------
 # Apply theme
