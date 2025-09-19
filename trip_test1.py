@@ -182,25 +182,31 @@ if trips:
                 file_name=f"{selected_trip['destination']}_expenses.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
+# --- AI Itinerary using Groq ---
+extra_prompt = st.text_area(
+    "Add extra instructions (optional) for AI",
+    placeholder="E.g., vegetarian restaurants, budget under 1500 THB, adventure activities..."
+)
 
-    # --- AI Itinerary using Groq ---
-    extra_prompt = st.text_area(
-        "Add extra instructions (optional) for AI",
-        placeholder="E.g., vegetarian restaurants, budget under 1500 THB, adventure activities..."
-    )
-    if st.button("🧠 Generate AI Itinerary"):
+GROQ_API_KEY = st.secrets.get("GROQ", {}).get("API_KEY")
+
+if st.button("🧠 Generate AI Itinerary"):
+    if not GROQ_API_KEY:
+        st.warning("Groq API key not found! AI itinerary cannot be generated. Please add it in Streamlit Secrets.")
+    else:
         question = (
             f"Plan a trip to {selected_trip['destination']} from {selected_trip['start_date']} "
             f"to {selected_trip['end_date']}, considering these expenses: {selected_trip.get('expenses',[])}. "
             f"{extra_prompt}"
         )
         try:
+            import requests
             headers = {"Authorization": f"Bearer {GROQ_API_KEY}"}
-            payload = {"prompt": question, "model": "groq-1"}
-            r = requests.post(GROQ_URL, headers=headers, json=payload, timeout=10)
+            payload = {"prompt": question, "model": "groq-1"}  # adjust model if needed
+            r = requests.post("https://api.groq.com/llm", headers=headers, json=payload, timeout=10)
             if r.ok:
                 st.markdown(r.json().get("answer", "No answer"))
             else:
-                st.error("Groq API request failed.")
+                st.error("Groq API request failed. Check your key and network.")
         except Exception as e:
             st.error(f"AI request failed: {e}")
