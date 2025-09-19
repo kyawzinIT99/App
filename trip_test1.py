@@ -18,8 +18,8 @@ from trip_utils import apply_fancy_theme, export_to_excel, export_to_csv
 GROQ_API_KEY = st.secrets.get("GROQ", {}).get("API_KEY")
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
-st.write("🔑 Secrets check")
-st.write(st.secrets.get("GROQ", {}))
+#st.write("🔑 Secrets check")
+#st.write(st.secrets.get("GROQ", {}))
 
 # -----------------------------
 # Apply custom theme
