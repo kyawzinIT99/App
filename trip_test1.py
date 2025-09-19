@@ -1,7 +1,8 @@
+# -----------------------------
+# trip_test1.py
+# -----------------------------
 import streamlit as st
-st.write("🔑 Secrets check")
-st.write(st.secrets.get("GROQ", {}))
-st.set_page_config(page_title="Trip Planner", layout="wide")
+st.set_page_config(page_title="Trip Planner", layout="wide")  # Must be first Streamlit command
 
 import json
 import os
@@ -11,22 +12,25 @@ import plotly.express as px
 import requests
 from trip_utils import apply_fancy_theme, export_to_excel, export_to_csv
 
-# -------------------------
-# Apply theme
-# -------------------------
+# -----------------------------
+# Check Groq API Key (Secrets)
+# -----------------------------
+GROQ_API_KEY = st.secrets.get("GROQ", {}).get("API_KEY")
+GROQ_URL = "https://api.groq.com/llm"
+
+st.write("🔑 Secrets check")
+st.write(st.secrets.get("GROQ", {}))
+
+# -----------------------------
+# Apply custom theme
+# -----------------------------
 apply_fancy_theme()
 
-# -------------------------
-# Constants
-# -------------------------
+# -----------------------------
+# Constants & Helpers
+# -----------------------------
 DATA_FILE = "trip_data.json"
-# Safely access Groq API key
-GROQ_API_KEY = st.secrets.get("GROQ", {}).get("API_KEY")
-GROQ_URL = "https://api.groq.com/llm"  # replace with your actual endpoint
 
-# -------------------------
-# Helpers: load / save local
-# -------------------------
 def load_data():
     if not os.path.exists(DATA_FILE):
         return []
@@ -40,9 +44,6 @@ def save_data(data):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
-# -------------------------
-# Local delete helpers
-# -------------------------
 def local_delete_expense(trip_index, expense_index):
     trips = load_data()
     if 0 <= trip_index < len(trips):
@@ -54,18 +55,18 @@ def local_delete_expense(trip_index, expense_index):
             return removed
     return None
 
-# -------------------------
+# -----------------------------
 # Session state
-# -------------------------
+# -----------------------------
 if "refresh" not in st.session_state:
     st.session_state.refresh = False
 
-# -------------------------
+# -----------------------------
 # App UI
-# -------------------------
+# -----------------------------
 st.title("🌍 Trip Planner by itsolutions.mm (0949567820)")
 
-# --- Sidebar: Add new trip ---
+# --- Sidebar: Add New Trip ---
 st.sidebar.header("Add New Trip")
 with st.sidebar.form("new_trip"):
     destination = st.text_input("Destination")
