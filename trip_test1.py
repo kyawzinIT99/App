@@ -1,13 +1,6 @@
 import streamlit as st
-
-# -------------------------
-# ✅ Streamlit page config must be first
-# -------------------------
 st.set_page_config(page_title="Trip Planner", layout="wide")
 
-# -------------------------
-# Imports
-# -------------------------
 import json
 import os
 from datetime import date
@@ -25,6 +18,7 @@ apply_fancy_theme()
 # Constants
 # -------------------------
 DATA_FILE = "trip_data.json"
+# Safely access Groq API key
 GROQ_API_KEY = st.secrets.get("GROQ", {}).get("API_KEY")
 GROQ_URL = "https://api.groq.com/llm"  # replace with your actual endpoint
 
@@ -148,47 +142,13 @@ if trips:
                     st.success(f"Expense {i+1} deleted")
                     st.session_state.refresh = not st.session_state.refresh
 
-        # --- Total Expenses by Currency ---
-        totals = {}
-        for e in expenses:
-            curr = e.get("currency","THB (฿)")
-            totals[curr] = totals.get(curr,0) + e.get("amount",0.0)
-        for curr, amt in totals.items():
-            st.write(f"**Total Spent ({curr}):** {amt:.2f}")
-
         # --- Visual Charts ---
         df_exp = pd.DataFrame(expenses)
-        for col in ["category","amount","currency"]:
-            if col not in df_exp.columns:
-                df_exp[col] = "Unknown" if col!="amount" else 0.0
         fig_cat = px.bar(
             df_exp.groupby("category", as_index=False)["amount"].sum(),
             x="category", y="amount", color="category", title="Total Expenses by Category"
         )
         st.plotly_chart(fig_cat, use_container_width=True)
-
-        fig_curr = px.pie(
-            df_exp.groupby("currency", as_index=False)["amount"].sum(),
-            names="currency", values="amount", title="Expenses by Currency"
-        )
-        fig_curr.update_traces(textinfo='label+percent', hoverinfo='label+value+percent')
-        st.plotly_chart(fig_curr, use_container_width=True)
-    else:
-        st.info("No expenses yet.")
-
-    # --- Export to Excel ---
-    if st.button("💾 Export Expenses to Excel"):
-        df_export = pd.DataFrame(expenses)
-        if not df_export.empty:
-            import io
-            excel_buffer = io.BytesIO()
-            df_export.to_excel(excel_buffer, index=False, engine='openpyxl')
-            st.download_button(
-                label="Download Excel",
-                data=excel_buffer,
-                file_name=f"{selected_trip['destination']}_expenses.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
 
 # --- AI Itinerary using Groq ---
 extra_prompt = st.text_area(
@@ -207,7 +167,7 @@ if st.button("🧠 Generate AI Itinerary"):
         )
         try:
             headers = {"Authorization": f"Bearer {GROQ_API_KEY}"}
-            payload = {"prompt": question, "model": "groq-1"}  # adjust model if needed
+            payload = {"prompt": question, "model": "groq-1"}
             r = requests.post(GROQ_URL, headers=headers, json=payload, timeout=10)
             if r.ok:
                 st.markdown(r.json().get("answer", "No answer"))
