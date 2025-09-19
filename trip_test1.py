@@ -1,7 +1,13 @@
 import streamlit as st
-st.write("GROQ API Key:", st.secrets.get("GROQ", {}).get("API_KEY"))
+
+# -------------------------
+# ✅ Streamlit page config must be first
+# -------------------------
 st.set_page_config(page_title="Trip Planner", layout="wide")
 
+# -------------------------
+# Imports
+# -------------------------
 import json
 import os
 from datetime import date
@@ -199,15 +205,13 @@ if st.button("🧠 Generate AI Itinerary"):
             f"to {selected_trip['end_date']}, considering these expenses: {selected_trip.get('expenses',[])}. "
             f"{extra_prompt}"
         )
-        with st.spinner("Generating AI itinerary..."):
-            try:
-                headers = {"Authorization": f"Bearer {GROQ_API_KEY}"}
-                payload = {"prompt": question, "model": "groq-1"}  # adjust model if needed
-                r = requests.post(GROQ_URL, headers=headers, json=payload, timeout=10)
-                if r.ok:
-                    answer = r.json().get("answer", "No answer from Groq API.")
-                    st.markdown(f"### 📝 AI Itinerary\n{answer}")
-                else:
-                    st.error("Groq API request failed. Check your key and network.")
-            except Exception as e:
-                st.error(f"AI request failed: {e}")
+        try:
+            headers = {"Authorization": f"Bearer {GROQ_API_KEY}"}
+            payload = {"prompt": question, "model": "groq-1"}  # adjust model if needed
+            r = requests.post(GROQ_URL, headers=headers, json=payload, timeout=10)
+            if r.ok:
+                st.markdown(r.json().get("answer", "No answer"))
+            else:
+                st.error("Groq API request failed. Check your key and network.")
+        except Exception as e:
+            st.error(f"AI request failed: {e}")
