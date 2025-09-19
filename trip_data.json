@@ -45,6 +45,12 @@
         "category": "Food",
         "amount": 260.0,
         "description": ""
+      },
+      {
+        "date": "2025-09-19",
+        "category": "Other",
+        "amount": 350.0,
+        "description": ""
       }
     ],
     "budget": 12000.0,
