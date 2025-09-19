@@ -2,7 +2,7 @@
 # trip_test1.py
 # -----------------------------
 import streamlit as st
-st.set_page_config(page_title="Trip Planner", layout="wide")  # Must be first Streamlit command
+st.set_page_config(page_title="Trip Planner", layout="wide")  # Must be first
 
 import json
 import os
@@ -13,24 +13,20 @@ import requests
 from trip_utils import apply_fancy_theme, export_to_excel, export_to_csv
 
 # -----------------------------
-# Check Groq API Key (Secrets)
-# -----------------------------
-GROQ_API_KEY = st.secrets.get("GROQ", {}).get("API_KEY")
-GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-
-#st.write("🔑 Secrets check")
-#st.write(st.secrets.get("GROQ", {}))
-
-# -----------------------------
-# Apply custom theme
+# Apply theme
 # -----------------------------
 apply_fancy_theme()
 
 # -----------------------------
-# Constants & Helpers
+# Constants
 # -----------------------------
 DATA_FILE = "trip_data.json"
+GROQ_API_KEY = st.secrets.get("GROQ", {}).get("API_KEY")
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"  # Correct endpoint
 
+# -----------------------------
+# Helpers
+# -----------------------------
 def load_data():
     if not os.path.exists(DATA_FILE):
         return []
@@ -145,20 +141,39 @@ if trips:
                     st.success(f"Expense {i+1} deleted")
                     st.session_state.refresh = not st.session_state.refresh
 
+        # --- Total Expenses by Currency ---
+        totals = {}
+        for e in expenses:
+            curr = e.get("currency","THB (฿)")
+            totals[curr] = totals.get(curr, 0) + e.get("amount",0.0)
+        for curr, amt in totals.items():
+            st.write(f"**Total Spent ({curr}):** {amt:.2f}")
+
         # --- Visual Charts ---
         df_exp = pd.DataFrame(expenses)
+        for col in ["category","amount","currency"]:
+            if col not in df_exp.columns:
+                df_exp[col] = "Unknown" if col!="amount" else 0.0
         fig_cat = px.bar(
             df_exp.groupby("category", as_index=False)["amount"].sum(),
             x="category", y="amount", color="category", title="Total Expenses by Category"
         )
         st.plotly_chart(fig_cat, use_container_width=True)
 
+        fig_curr = px.pie(
+            df_exp.groupby("currency", as_index=False)["amount"].sum(),
+            names="currency", values="amount", title="Expenses by Currency"
+        )
+        fig_curr.update_traces(textinfo='label+percent', hoverinfo='label+value+percent')
+        st.plotly_chart(fig_curr, use_container_width=True)
+
         # --- Export to Excel ---
         if st.button("💾 Export Expenses to Excel"):
-            if not df_exp.empty:
+            df_export = pd.DataFrame(expenses)
+            if not df_export.empty:
                 import io
                 excel_buffer = io.BytesIO()
-                df_exp.to_excel(excel_buffer, index=False, engine='openpyxl')
+                df_export.to_excel(excel_buffer, index=False, engine='openpyxl')
                 st.download_button(
                     label="Download Excel",
                     data=excel_buffer,
@@ -176,16 +191,15 @@ if st.button("🧠 Generate AI Itinerary"):
     if not GROQ_API_KEY:
         st.warning("Groq API key not found! AI itinerary cannot be generated. Please add it in Streamlit Secrets.")
     else:
-        # Build messages
         messages = [
             {"role": "system", "content": "You are a helpful travel assistant."},
-            {"role": "user", "content": f"Plan a trip to {selected_trip['destination']} from {selected_trip['start_date']} to {selected_trip['end_date']} considering these expenses: {selected_trip.get('expenses', [])}."}
+            {"role": "user", "content": f"Plan a trip to {selected_trip['destination']} from {selected_trip['start_date']} to {selected_trip['end_date']}, considering these expenses: {selected_trip.get('expenses',[])}."},
         ]
         if extra_prompt:
             messages.append({"role": "user", "content": extra_prompt})
 
         payload = {
-            "model": "llama-3.3-70b-versatile",  # Updated model
+            "model": "llama-3.3-70b-versatile",  # Replace with your available model
             "messages": messages,
             "max_tokens": 500,
         }
@@ -204,4 +218,3 @@ if st.button("🧠 Generate AI Itinerary"):
                 st.error(f"Groq API request failed. Status: {response.status_code}, {response.text}")
         except Exception as e:
             st.error(f"AI request failed: {e}")
-   
