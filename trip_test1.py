@@ -1,4 +1,6 @@
 import streamlit as st
+st.write("🔑 Secrets check")
+st.write(st.secrets.get("GROQ", {}))
 st.set_page_config(page_title="Trip Planner", layout="wide")
 
 import json
