@@ -6,13 +6,20 @@ import os
 from datetime import date
 import pandas as pd
 import plotly.express as px
+import requests
 from trip_utils import apply_fancy_theme, export_to_excel, export_to_csv
 
+# -------------------------
 # Apply theme
+# -------------------------
 apply_fancy_theme()
 
+# -------------------------
 # Constants
+# -------------------------
 DATA_FILE = "trip_data.json"
+GROQ_API_KEY = st.secrets["GROQ"]["API_KEY"]
+GROQ_URL = "https://api.groq.com/llm"  # replace with your actual endpoint
 
 # -------------------------
 # Helpers: load / save local
@@ -159,7 +166,6 @@ if trips:
         )
         fig_curr.update_traces(textinfo='label+percent', hoverinfo='label+value+percent')
         st.plotly_chart(fig_curr, use_container_width=True)
-
     else:
         st.info("No expenses yet.")
 
@@ -176,3 +182,25 @@ if trips:
                 file_name=f"{selected_trip['destination']}_expenses.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
+
+    # --- AI Itinerary using Groq ---
+    extra_prompt = st.text_area(
+        "Add extra instructions (optional) for AI",
+        placeholder="E.g., vegetarian restaurants, budget under 1500 THB, adventure activities..."
+    )
+    if st.button("🧠 Generate AI Itinerary"):
+        question = (
+            f"Plan a trip to {selected_trip['destination']} from {selected_trip['start_date']} "
+            f"to {selected_trip['end_date']}, considering these expenses: {selected_trip.get('expenses',[])}. "
+            f"{extra_prompt}"
+        )
+        try:
+            headers = {"Authorization": f"Bearer {GROQ_API_KEY}"}
+            payload = {"prompt": question, "model": "groq-1"}
+            r = requests.post(GROQ_URL, headers=headers, json=payload, timeout=10)
+            if r.ok:
+                st.markdown(r.json().get("answer", "No answer"))
+            else:
+                st.error("Groq API request failed.")
+        except Exception as e:
+            st.error(f"AI request failed: {e}")
